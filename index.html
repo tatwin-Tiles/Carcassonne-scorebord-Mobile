@@ -75,6 +75,47 @@ html,body{margin:0;padding:0;}
   .rotate-overlay{ display:flex; }
   .wrap{ display:none; }
 }
+
+/* ---- Compact layout: phones in landscape should use the full screen ---- */
+@media (max-width:900px) and (orientation:landscape){
+  body{
+    padding:10px 10px 24px;
+  }
+  .wrap{ max-width:100%; }
+  header{ margin-bottom:14px; }
+  .title-row{ gap:10px; }
+  .title-meeple{ width:32px; height:32px; padding:5px; }
+  header h1{ font-size:20px; margin:0 0 3px; }
+  header .sub{ font-size:10px; }
+  header .divider{ width:80px; height:2px; margin:8px auto 0; }
+  .addbar{ margin-bottom:10px; }
+  .settings-cols{ gap:8px; }
+  .settings-col{ padding:10px 12px; min-width:180px; }
+  .grid{ gap:10px; }
+  .start-row{ margin:16px 0 4px; }
+  footer, .wrap > div[style*="margin-top:40px"], .wrap > div[style*="margin-top:6px"]{
+    margin-top:8px !important;
+  }
+
+  /* Modals must never be forced taller than the (short) viewport */
+  .modal-backdrop{ align-items:flex-start; padding:6px; }
+  .modal{ max-height:none; margin:auto 0; }
+  .scoring-modal{ min-height:0; max-width:100%; }
+  .modal h2{ font-size:16px; margin-bottom:2px; }
+  .modal .modal-player{ font-size:11px; margin-bottom:8px; }
+  .tabs{ margin-bottom:8px; gap:4px; }
+  .tab{ padding:5px 9px; font-size:11px; }
+  .field-row{ margin-bottom:8px; }
+  .calc-preview{ padding:8px; margin-bottom:8px; }
+}
+
+/* Extra safety net: on any very short screen, never let a fixed min-height
+   push modal content off-screen, and always allow the backdrop to scroll */
+@media (max-height:500px){
+  .modal-backdrop{ align-items:flex-start; }
+  .modal{ max-height:none; }
+  .scoring-modal{ min-height:0; }
+}
 body{
   background-color:var(--bg);
   background-image:
@@ -626,6 +667,7 @@ header .divider{
   position:fixed; inset:0; background:rgba(0,0,0,0.6);
   display:flex; align-items:center; justify-content:center;
   z-index:50; padding:8px;
+  overflow-y:auto;
 }
 .modal{
   background-color:var(--parchment);
