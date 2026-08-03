@@ -30,6 +30,51 @@
 
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
+
+/* ---- Landscape-only lock (phones) ---- */
+.rotate-overlay{
+  display:none;
+  position:fixed; inset:0;
+  z-index:9999;
+  background:
+    radial-gradient(ellipse at top, #3a2f20 0%, var(--bg) 55%, var(--bg-alt) 100%);
+  color:var(--parchment);
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:32px;
+  font-family:'Work Sans', sans-serif;
+}
+.rotate-overlay .rotate-icon{
+  width:64px; height:64px;
+  margin-bottom:18px;
+  animation:rotateHint 1.8s ease-in-out infinite;
+  color:var(--gold);
+}
+.rotate-overlay .rotate-icon svg{width:100%; height:100%; display:block;}
+@keyframes rotateHint{
+  0%, 100%{ transform:rotate(0deg); }
+  50%{ transform:rotate(-90deg); }
+}
+.rotate-overlay h2{
+  font-family:'Cinzel', serif;
+  color:var(--gold);
+  font-size:20px;
+  letter-spacing:0.04em;
+  margin:0 0 10px;
+}
+.rotate-overlay p{
+  font-size:14px;
+  color:var(--parchment-dim);
+  max-width:280px;
+  line-height:1.5;
+  margin:0;
+}
+@media (max-width:900px) and (orientation:portrait){
+  .rotate-overlay{ display:flex; }
+  .wrap{ display:none; }
+}
 body{
   background-color:var(--bg);
   background-image:
@@ -826,6 +871,16 @@ header .divider{
 </style>
 </head>
 <body>
+<div class="rotate-overlay" id="rotateOverlay">
+  <div class="rotate-icon">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="4" y="2" width="12" height="20" rx="2" stroke="currentColor" stroke-width="1.6"/>
+      <line x1="10" y1="19" x2="10" y2="19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <h2>Draai je telefoon</h2>
+  <p>Deze app werkt alleen in landschapstand (horizontaal). Kantel je telefoon om verder te gaan.</p>
+</div>
 <div class="wrap">
   <header>
     <div class="title-row">
