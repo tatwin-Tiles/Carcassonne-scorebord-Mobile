@@ -526,7 +526,7 @@ header .divider{
   background-blend-mode: multiply, multiply, multiply, soft-light, normal;
   color:var(--ink);
   border-radius:3px;
-  padding:18px 18px 16px;
+  padding:22px 18px 19px;
   box-shadow:var(--shadow), inset 0 0 18px rgba(90,70,30,0.18);
   position:relative;
   border:1px solid rgba(0,0,0,0.2);
@@ -670,21 +670,21 @@ header .divider{
 /* ---- Tablet: shrink score tiles to half size, 2 per row ---- */
 @media (min-width:600px) and (max-width:1024px){
   .grid{ grid-template-columns:repeat(2, 1fr); gap:10px; }
-  .card{ padding:9px 9px 8px; border-radius:6px; }
+  .card{ padding:11px 9px 10px; border-radius:6px; }
   .card::before{ inset:3px; border-radius:4px; }
-  .card-top{ margin-bottom:2px; gap:5px; }
+  .card-top{ margin-bottom:3px; gap:5px; }
   .meeple-dot{ width:19.4px; height:19.4px; border-width:1.5px; }
   .pname{ font-size:13.3px; }
   .removeX{ font-size:12px; padding:1px 2px; }
   .crown-badge{ font-size:11px; }
   .score{ font-size:22px; }
-  .score-row{ margin:6px 0 6px; gap:6px; }
-  .card-actions{ gap:4px; margin-bottom:5px; }
+  .score-row{ margin:7px 0 7px; gap:6px; }
+  .card-actions{ gap:4px; margin-bottom:6px; }
   .card-actions .btn{ height:26px; padding:4px 6px; font-size:9px; border-radius:4px; border-width:1.5px; }
-  .history{ max-height:55px; font-size:8.5px; padding-top:4px; gap:2px; }
-  .undo-row{ margin-top:4px; }
+  .history{ max-height:66px; font-size:8.5px; padding-top:5px; gap:2px; }
+  .undo-row{ margin-top:5px; }
   .undo-row .btn{ padding:3px 6px; font-size:9px; }
-  .goods-tile{ gap:6px; margin:0 0 4px; }
+  .goods-tile{ gap:6px; margin:0 0 5px; }
   .goods-mini-val{ font-size:9px; min-width:11px; }
   .goods-mini-icon{ width:15px; height:15px; }
   .goods-mini-icon .goods-shield{ font-size:7px; }
