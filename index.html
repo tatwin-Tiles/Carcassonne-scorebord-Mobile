@@ -1354,9 +1354,33 @@ async function loadState(){
   }
   refreshRecordHolder();
   render();
+
+  // Pas ná het laden van de lokale geschiedenis de online ranglijst erbij halen,
+  // anders overschrijft de code hierboven een eerder binnengekomen cloud-merge.
+  await syncCloudGames();
 }
 
 /* ---- Gedeelde online ranglijst (Firebase) ---- */
+function waitForCloudReady(timeoutMs){
+  return new Promise(resolve=>{
+    if(window.cloudLoadGames) return resolve(true);
+    let done = false;
+    const onReady = ()=>{
+      if(done) return;
+      done = true;
+      window.removeEventListener('firebase-ready', onReady);
+      resolve(true);
+    };
+    window.addEventListener('firebase-ready', onReady);
+    setTimeout(()=>{
+      if(done) return;
+      done = true;
+      window.removeEventListener('firebase-ready', onReady);
+      resolve(!!window.cloudLoadGames);
+    }, timeoutMs || 4000);
+  });
+}
+
 function mergeCloudGames(cloudGames){
   if(!Array.isArray(cloudGames) || !cloudGames.length) return;
   const localIds = new Set(gameHistory.map(g=>g && g.id).filter(Boolean));
@@ -1381,12 +1405,16 @@ function mergeCloudGames(cloudGames){
   }
 }
 
-window.addEventListener('firebase-ready', ()=>{
-  if(!window.cloudLoadGames) return;
-  window.cloudLoadGames().then(mergeCloudGames).catch(e=>{
+async function syncCloudGames(){
+  const ready = await waitForCloudReady();
+  if(!ready || !window.cloudLoadGames) return;
+  try{
+    const cloudGames = await window.cloudLoadGames();
+    mergeCloudGames(cloudGames);
+  }catch(e){
     console.error('Online spellen laden mislukt', e);
-  });
-});
+  }
+}
 
 function toggleExpansion(){
   state.settings.innsCathedrals = els.expansionToggle.checked;
