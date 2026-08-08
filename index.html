@@ -2734,50 +2734,112 @@ loadState();
 </script>
 
 <script type="module">
-  // Gedeelde online ranglijst via Firebase Firestore
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-  import {
-    getFirestore, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+  // Gedeelde online ranglijst via Firestore REST-API
+  // (De Firebase JS SDK gebruikt intern WebChannel/streaming, wat op sommige
+  // netwerken — met name mobiele hotspots — stil blijft hangen zonder foutmelding.
+  // Gewone fetch()-verzoeken werken op die netwerken wel gewoon, dus we praten
+  // rechtstreeks met de Firestore REST-API.)
+  const PROJECT_ID = "carcassonne-scorboard";
+  const BASE_URL = "https://firestore.googleapis.com/v1/projects/" + PROJECT_ID + "/databases/default/documents";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDR1H5fOJeRQAtW6gIKgHEcjAfv_LqI_W8",
-    authDomain: "carcassonne-scorboard.firebaseapp.com",
-    projectId: "carcassonne-scorboard",
-    storageBucket: "carcassonne-scorboard.firebasestorage.app",
-    messagingSenderId: "222599978705",
-    appId: "1:222599978705:web:95628485fe09e99d26eff0"
+  function toFirestoreValue(v){
+    if(v === null || v === undefined) return { nullValue: null };
+    if(typeof v === 'string') return { stringValue: v };
+    if(typeof v === 'boolean') return { booleanValue: v };
+    if(typeof v === 'number'){
+      return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+    }
+    if(Array.isArray(v)) return { arrayValue: { values: v.map(toFirestoreValue) } };
+    if(typeof v === 'object') return { mapValue: { fields: toFirestoreFieldsRaw(v) } };
+    return { stringValue: String(v) };
+  }
+  function toFirestoreFieldsRaw(obj){
+    const fields = {};
+    Object.keys(obj).forEach(k=>{ fields[k] = toFirestoreValue(obj[k]); });
+    return fields;
+  }
+  function toFirestoreFields(obj){
+    return { fields: toFirestoreFieldsRaw(obj) };
+  }
+  function fromFirestoreValue(v){
+    if(!v) return null;
+    if('stringValue' in v) return v.stringValue;
+    if('integerValue' in v) return parseInt(v.integerValue, 10);
+    if('doubleValue' in v) return v.doubleValue;
+    if('booleanValue' in v) return v.booleanValue;
+    if('nullValue' in v) return null;
+    if('timestampValue' in v) return v.timestampValue;
+    if('arrayValue' in v) return (v.arrayValue.values||[]).map(fromFirestoreValue);
+    if('mapValue' in v) return fromFirestoreFieldsRaw(v.mapValue.fields||{});
+    return null;
+  }
+  function fromFirestoreFieldsRaw(fields){
+    const obj = {};
+    Object.keys(fields||{}).forEach(k=>{ obj[k] = fromFirestoreValue(fields[k]); });
+    return obj;
+  }
+
+  // Slaat een afgerond spel op in de gedeelde online ranglijst (zonder foto: te groot voor Firestore)
+  window.cloudSaveGame = async function(record){
+    try{
+      const { id, cloudId, photo, ...data } = record;
+      const res = await fetch(BASE_URL + "/games", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toFirestoreFields(data))
+      });
+      if(!res.ok){
+        const errText = await res.text();
+        throw new Error('Firestore REST ' + res.status + ': ' + errText.slice(0,200));
+      }
+      const json = await res.json();
+      const parts = json.name.split('/');
+      return parts[parts.length-1];
+    }catch(e){
+      console.error("Cloud opslaan mislukt", e);
+      window.__lastCloudError = e;
+      return null;
+    }
   };
 
-  try{
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const gamesCol = collection(db, "games");
-
-    // Slaat een afgerond spel op in de gedeelde online ranglijst (zonder foto: te groot voor Firestore)
-    window.cloudSaveGame = async function(record){
-      const docRef = await addDoc(gamesCol, {
-        ...record,
-        savedAt: serverTimestamp()
+  // Haalt de laatste 200 spellen op, gesorteerd op datum (nieuwste eerst)
+  window.cloudLoadGames = async function(){
+    try{
+      const body = {
+        structuredQuery: {
+          from: [{ collectionId: 'games' }],
+          orderBy: [{ field: { fieldPath: 'date' }, direction: 'DESCENDING' }],
+          limit: 200
+        }
+      };
+      const res = await fetch(BASE_URL + ":runQuery", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
       });
-      return docRef.id;
-    };
-
-    // Haalt de laatste 200 spellen op, gesorteerd op datum (nieuwste eerst)
-    window.cloudLoadGames = async function(){
-      const q = query(gamesCol, orderBy("date", "desc"), limit(200));
-      const snap = await getDocs(q);
-      const games = [];
-      snap.forEach(doc=>{
-        games.push({ ...doc.data(), cloudId: doc.id });
+      if(!res.ok){
+        const errText = await res.text();
+        throw new Error('Firestore REST ' + res.status + ': ' + errText.slice(0,200));
+      }
+      const json = await res.json();
+      const results = [];
+      (json||[]).forEach(item=>{
+        if(item && item.document){
+          const parts = item.document.name.split('/');
+          const docId = parts[parts.length-1];
+          const fields = fromFirestoreFieldsRaw(item.document.fields);
+          results.push({ id: docId, cloudId: docId, ...fields });
+        }
       });
-      return games;
-    };
+      return results;
+    }catch(e){
+      console.error("Cloud laden mislukt", e);
+      window.__lastCloudError = e;
+      return [];
+    }
+  };
 
-    window.dispatchEvent(new Event('firebase-ready'));
-  }catch(e){
-    console.error('Firebase kon niet worden geïnitialiseerd; de online ranglijst is niet beschikbaar.', e);
-  }
+  window.dispatchEvent(new Event('firebase-ready'));
 </script>
 </body>
 </html>
